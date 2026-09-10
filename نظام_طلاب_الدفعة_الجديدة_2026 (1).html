@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام طلاب الدفعة الجديدة 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#122A4D; --navy-dark:#0B1D38; --gold:#B9922F; --gold-light:#E8D9B0;
+    --ivory:#FAF8F3; --card:#FFFFFF; --line:#E4E0D6; --text:#20242C; --muted:#6B7280;
+    --red:#B3261E; --red-bg:#FBEAE9; --green:#1E6B44; --green-bg:#E9F5EE; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI', Tahoma, Arial, sans-serif;background:var(--ivory);color:var(--text);}
+  header{background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);color:#fff;padding:22px 28px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-bottom:3px solid var(--gold);}
+  header .title{display:flex;align-items:center;gap:12px;}
+  header .badge{width:42px;height:42px;border-radius:50%;background:var(--gold);color:var(--navy-dark);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;}
+  header h1{font-size:19px;margin:0;} header p{margin:2px 0 0;font-size:12.5px;color:var(--gold-light);}
+  .container{max-width:1320px;margin:0 auto;padding:22px 20px 60px;}
+
+  .tabs{display:flex;gap:6px;margin-bottom:18px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:5px;width:fit-content;}
+  .tab-btn{padding:9px 22px;border-radius:8px;font-size:14px;font-weight:700;background:transparent;color:var(--muted);border:none;cursor:pointer;}
+  .tab-btn.active{background:var(--navy);color:#fff;}
+  .tab-btn .count{background:rgba(255,255,255,0.25);border-radius:20px;padding:1px 8px;font-size:11.5px;margin-right:6px;}
+  .tab-btn:not(.active) .count{background:var(--gold-light);color:var(--navy-dark);}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;border-top:3px solid var(--gold);}
+  .card .label{font-size:12px;color:var(--muted);margin-bottom:6px;} .card .value{font-size:20px;font-weight:700;color:var(--navy);}
+  .card.debit{border-top-color:var(--red);} .card.debit .value{color:var(--red);}
+  .card.credit{border-top-color:var(--green);} .card.credit .value{color:var(--green);}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .toolbar input[type=text]{flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;}
+  select{padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;background:#fff;}
+  button{cursor:pointer;border:none;border-radius:8px;padding:9px 16px;font-size:13.5px;font-weight:600;}
+  .btn-primary{background:var(--navy);color:#fff;} .btn-primary:hover{background:var(--navy-dark);}
+  .btn-gold{background:var(--gold);color:var(--navy-dark);} .btn-gold:hover{background:#a4801f;}
+  .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--text);} .btn-ghost:hover{background:#f2f0ea;}
+  .btn-danger{background:var(--red-bg);color:var(--red);} .btn-sm{padding:5px 10px;font-size:12px;}
+
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+  thead th{background:var(--navy);color:#fff;font-size:12.5px;font-weight:600;padding:10px 8px;text-align:center;white-space:nowrap;}
+  tbody td{padding:9px 8px;text-align:center;font-size:13px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  tbody td.name-cell{text-align:right;white-space:normal;min-width:150px;} tbody tr:hover{background:#F7F5EF;}
+  .status-pill{padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;display:inline-block;}
+  .pill-debit{background:var(--red-bg);color:var(--red);} .pill-credit{background:var(--green-bg);color:var(--green);} .pill-even{background:#EEE;color:#555;}
+  .pill-flag{background:#FFF3CD;color:#8A6D00;}
+  .table-wrap{overflow-x:auto;border-radius:var(--radius);} .actions-cell{white-space:nowrap;}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,29,56,0.55);align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#fff;border-radius:12px;max-width:680px;width:100%;max-height:88vh;overflow-y:auto;padding:22px 24px;position:relative;}
+  .modal h2{margin-top:0;color:var(--navy);font-size:17px;border-bottom:2px solid var(--gold-light);padding-bottom:10px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+  .form-grid label{font-size:12.5px;color:var(--muted);display:block;margin-bottom:4px;}
+  .form-grid input, .form-grid select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:13.5px;}
+  .full{grid-column:1/-1;} .modal-actions{display:flex;justify-content:flex-start;gap:10px;margin-top:18px;}
+  .close-x{position:absolute;top:16px;left:16px;background:none;font-size:20px;color:var(--muted);}
+  footer{text-align:center;padding:18px;font-size:11.5px;color:var(--muted);}
+  .empty-note{padding:30px;text-align:center;color:var(--muted);font-size:13.5px;}
+  .notes-cell{max-width:220px;white-space:normal;text-align:right;font-size:11.5px;color:#555;}
+  #fileInput{display:none;}
+  .import-box{border:1px dashed var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px;background:#FBFAF7;}
+  .import-box label{font-weight:600;font-size:13px;display:block;margin-bottom:4px;color:var(--navy);}
+  .import-box small{color:var(--muted);display:block;margin-top:3px;}
+  .import-summary{background:#F7F5EF;border-radius:8px;padding:12px 14px;font-size:13px;margin-top:10px;max-height:260px;overflow-y:auto;}
+  .import-summary table{font-size:12px;}
+  .import-summary th, .import-summary td{padding:5px 6px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">
+    <div class="badge">MW</div>
+    <div>
+      <h1>نظام طلاب الدفعة الجديدة 2026</h1>
+      <p>Mohamed Wael — Business و Computer Science في نفس النظام، كل واحد منفصل جوا التاب بتاعه</p>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <span id="syncStatus" style="font-size:12px;color:var(--gold-light);"></span>
+    <button class="btn-gold" onclick="openAddModal()">+ إضافة طالب</button>
+    <button class="btn-primary" onclick="openImportModal()">🔄 استيراد بيانات جديدة</button>
+    <button class="btn-ghost" onclick="exportCSV()">تصدير Excel (CSV)</button>
+    <button class="btn-ghost" onclick="exportJSON()">حفظ نسخة (JSON)</button>
+    <button class="btn-ghost" onclick="document.getElementById('fileInput').click()">استيراد نسخة JSON</button>
+    <input type="file" id="fileInput" accept=".json" onchange="importJSON(event)">
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab-btn" id="tabBtn_business" onclick="switchTab('business')">Business <span class="count" id="count_business">0</span></button>
+    <button class="tab-btn" id="tabBtn_cs" onclick="switchTab('cs')">Computer Science <span class="count" id="count_cs">0</span></button>
+  </div>
+
+  <div class="cards" id="summaryCards"></div>
+
+  <div class="toolbar">
+    <input type="text" id="searchBox" placeholder="بحث بالاسم أو الكود..." oninput="render()">
+    <select id="statusFilter" onchange="render()">
+      <option value="all">كل الحالات</option>
+      <option value="debit">مدين (عليه)</option>
+      <option value="credit">دائن (له)</option>
+      <option value="even">متزن</option>
+      <option value="flagged">محتاج ضبط المستحق</option>
+    </select>
+    <select id="sortBy" onchange="render()">
+      <option value="num">ترتيب: الافتراضي</option>
+      <option value="name">الاسم</option>
+      <option value="balanceDesc">الرصيد (الأعلى مديونية)</option>
+      <option value="balanceAsc">الرصيد (الأعلى دائنية)</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>م</th><th>الكود</th><th>الاسم</th><th>الجنسية</th><th>التخصص</th><th>المستوى</th>
+          <th>خصم%</th>
+          <th>مستحق المعهد</th><th>مستحق الجمعية</th><th>مستحق الخدمات</th><th>رسوم الوزارة</th><th>إجمالي المستحق</th>
+          <th>مدفوع المعهد</th><th>مدفوع الجمعية</th><th>مدفوع الخدمات</th><th>رسوم أخرى مدفوعة</th><th>إجمالي المدفوع</th>
+          <th>الرصيد</th><th>الحالة</th><th>ملاحظات</th><th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <div id="emptyNote" class="empty-note" style="display:none;">لا يوجد طلاب مطابقين للبحث</div>
+</div>
+
+<footer>نظام Mohamed Wael — الدفعة الجديدة 2026 (Business + CS) | يعمل بالكامل في المتصفح، احفظ نسخة JSON بشكل دوري للحفاظ على البيانات</footer>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <h2 id="modalTitle">إضافة طالب</h2>
+    <form id="studentForm" onsubmit="return saveStudent(event)">
+      <div class="form-grid">
+        <div><label>الكود</label><input type="text" id="f_id" required></div>
+        <div><label>الاسم</label><input type="text" id="f_name" required></div>
+        <div><label>الجنسية</label><select id="f_nat"><option>Egyptian</option><option>Foreigner</option></select></div>
+        <div><label>التخصص</label><input type="text" id="f_major" value="General"></div>
+        <div><label>المستوى</label><input type="number" id="f_level" value="1" min="1"></div>
+        <div><label>الحالة</label><select id="f_status"><option>Registered</option><option>Pending</option><option>Withdrawn</option></select></div>
+        <div><label>نسبة الخصم (%)</label><input type="number" id="f_disc" value="0" step="1"></div>
+        <div></div>
+        <div><label>مستحق المعهد</label><input type="number" id="f_insDue" value="0"></div>
+        <div><label>مدفوع المعهد</label><input type="number" id="f_insPaid" value="0"></div>
+        <div><label>مستحق الجمعية</label><input type="number" id="f_assoDue" value="0"></div>
+        <div><label>مدفوع الجمعية</label><input type="number" id="f_assoPaid" value="0"></div>
+        <div><label>مستحق الخدمات التعليمية</label><input type="number" id="f_eduDue" value="0"></div>
+        <div><label>مدفوع الخدمات التعليمية</label><input type="number" id="f_eduPaid" value="0"></div>
+        <div><label>رسوم الوزارة</label><input type="number" id="f_minFees" value="0"></div>
+        <div><label>رسوم أخرى مدفوعة</label><input type="number" id="f_otherPaid" value="0"></div>
+        <div class="full"><label>ملاحظات</label><input type="text" id="f_notes"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-primary">حفظ</button>
+        <button type="button" class="btn-ghost" onclick="closeModal()">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importOverlay">
+  <div class="modal" style="max-width:760px;">
+    <button class="close-x" onclick="closeImportModal()">✕</button>
+    <h2>🔄 استيراد بيانات جديدة من ملفات الجامعة</h2>
+    <div class="import-box">
+      <label>ملف المدفوعات ده خاص بأي برنامج؟</label>
+      <select id="imp_program" style="width:100%;">
+        <option value="business">Business</option>
+        <option value="cs">Computer Science</option>
+      </select>
+      <small>الاختيار ده بيحدد التاب اللي "ملف مدفوعات البرنامج" هيتضاف عليه</small>
+    </div>
+    <div class="import-box">
+      <label>1) ملف مدفوعات البرنامج (شيت Total)</label>
+      <input type="file" id="imp_own" accept=".xlsx,.xls">
+      <small>مثال: BUS_01-05-2026.xlsx أو CS-Fall-2026.xlsx — هيتضاف بس طلاب كود 2026 (الدفعة الجديدة)</small>
+    </div>
+    <div class="import-box">
+      <label>2) ملف رسوم الجمعية (NEW-ASSO) — اختياري</label>
+      <input type="file" id="imp_asso" accept=".xlsx,.xls">
+      <small>هيتفلتر تلقائي على طلاب 2026 الموجودين في أي تاب من التابين</small>
+    </div>
+    <div class="import-box">
+      <label>3) ملف الخدمات التعليمية / التأمين (NEW-CAN) — اختياري</label>
+      <input type="file" id="imp_can" accept=".xlsx,.xls">
+      <small>نفس الفكرة — فلترة تلقائية على طلاب 2026 في أي تاب</small>
+    </div>
+    <button class="btn-gold" onclick="runImport()">تحليل الملفات</button>
+    <div id="importSummary" style="display:none;"></div>
+    <div class="modal-actions" id="importApplyBox" style="display:none;">
+      <button class="btn-primary" onclick="applyImport()">تأكيد وتطبيق التحديث</button>
+      <button class="btn-ghost" onclick="closeImportModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   ☁️ ربط جوجل شيت (اختياري):
+   1) اعمل Google Sheet جديد فاضي
+   2) Extensions > Apps Script > الصق كود Code.gs اللي جالك مع النظام
+   3) Deploy > New deployment > Web app > Execute as: Me > Who has access: Anyone
+   4) خد رابط الـ Web app والصقه هنا بين علامتي التنصيص:
+   ===================================================================== */
+const SHEET_API_URL = ""; // <-- حط رابط Apps Script هنا بعد النشر
+
+let data = {"business": [{"id": 202606001, "name": "Joly Emad Nashed Abdlsayed", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.4, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 10764, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 0, "origBalance": 1200, "notes": "Attended Open Day | Early registration | 70%-80% | [Center] smart — Zayed"}, {"id": 202606002, "name": "Magdy Mahmoud", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.3, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 12500, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 0, "origBalance": 1196.5, "notes": "[Early Bird Discount] Paid 19 Jul - 1 Aug 2026 — All branches | [Financial Aid (Egyptian)] Early registration (within 3 working days of nomination card issue date) — All branches | [Academic Scholarship (Egyptian)] ZC Business — 70%-80%"}, {"id": 202606004, "name": "hanen hesham hamed", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.3, "insDue": 0, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 14231.4, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -13862.4, "notes": "7569"}, {"id": 202606005, "name": "menna allah haythem", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 12499, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": 1730, "notes": "24894"}, {"id": 202606007, "name": "hazem abdelkhalek", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.3, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 14230, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -1733.5, "notes": "24894"}, {"id": 202606010, "name": "adam alaa ahmed", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.3, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 12498, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -1.5, "notes": "24894"}, {"id": 202606012, "name": "kenzy mohamed ebrhiam", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 12500, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": 1729, "notes": "24894"}, {"id": 202606013, "name": "dalia ahmed saed", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 14231.4, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -2.399999999999636, "notes": "24894"}, {"id": 202606014, "name": "sama sherif", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.3, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 14231, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -1734.5, "notes": "24894"}, {"id": 202606015, "name": "mazen mohamed ramadn", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 12498.6, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": 1730.3999999999996, "notes": "24894"}, {"id": 202606017, "name": "mona mahrous", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 14231.4, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -2.399999999999636, "notes": "24894"}, {"id": 202606019, "name": "Youssef haitham", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 1919, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": 12310, "notes": "24894"}, {"id": 202606020, "name": "Ali mohamed elsayed", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 14231.4, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -2.399999999999636, "notes": "24894"}, {"id": 202606021, "name": "Mohamed Ali Mohamed", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 14230.4, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -1.3999999999996362, "notes": "24894"}, {"id": 202606023, "name": "Haya Hussien Abdelghany", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.3, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 14231.4, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -1734.8999999999996, "notes": "24894"}, {"id": 202606048, "name": "Reem Amr Ali Hassan Ali", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.3, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 4600, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": 7896.5, "notes": "24894"}, {"id": 202606050, "name": "obay mohammed magdy", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 1, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 12498.6, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -12129.6, "notes": "24894"}, {"id": 202606051, "name": "yara omar mohammed", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.3, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 369, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": 12127.5, "notes": ""}, {"id": 202606053, "name": "omar magdy", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.3, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 12498.6, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -2.100000000000364, "notes": "24894"}, {"id": 202606055, "name": "Ali mohamed Ali", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 12498.6, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": 1730.3999999999996, "notes": "24894"}, {"id": 202606056, "name": "Loay tamer fawzy ahmed", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0.2, "insDue": 17325, "assoDue": 0, "eduDue": 6000, "minFees": 369, "insPaid": 14231.4, "assoPaid": 0, "eduPaid": 9200, "otherPaid": 1200, "origBalance": -2.399999999999636, "notes": ""}, {"id": 202606065, "name": "Fakhr Khalid", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 12498.6, "assoPaid": 1200, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - طالب جديد من سجل المدفوعات، محتاج ضبط الرسوم يدويًا"}, {"id": 202606066, "name": "Hager Hassan", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 11632.2, "assoPaid": 1200, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - طالب جديد من سجل المدفوعات، محتاج ضبط الرسوم يدويًا"}, {"id": 202606069, "name": "nariman hussein mohamed", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 14231, "assoPaid": 1200, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - طالب جديد من سجل المدفوعات، محتاج ضبط الرسوم يدويًا"}, {"id": 202606071, "name": "Mouda Baher", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 9600, "assoPaid": 1200, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - طالب جديد من سجل المدفوعات، محتاج ضبط الرسوم يدويًا"}, {"id": 202606072, "name": "shahd muhammed saied", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 14231.4, "assoPaid": 1200, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - طالب جديد من سجل المدفوعات، محتاج ضبط الرسوم يدويًا"}], "cs": [{"id": 202606064, "name": "Mark Alber Magdy", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 15313.9, "assoPaid": 0, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - محتاج ضبط الرسوم يدويًا"}, {"id": 202606067, "name": "Mohamed Abdelshakour", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 16366, "assoPaid": 1200, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - محتاج ضبط الرسوم يدويًا"}, {"id": 202606068, "name": "Ahamed ehab", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 15313.9, "assoPaid": 1200, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - محتاج ضبط الرسوم يدويًا"}, {"id": 202606070, "name": "mohamed mohsen eid", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 14261.8, "assoPaid": 1200, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - محتاج ضبط الرسوم يدويًا"}, {"id": 202606073, "name": "huda mohamed elghareeb", "nat": "Egyptian", "major": "General", "level": 1, "status": "Registered", "disc": 0, "insDue": 0, "assoDue": 0, "eduDue": 0, "minFees": 0, "insPaid": 14261.8, "assoPaid": 1200, "eduPaid": 6000, "otherPaid": 3200, "origBalance": 0, "notes": "مستحق غير محدد بعد - محتاج ضبط الرسوم يدويًا"}]}; // {business: [...], cs: [...]}
+let importedReceipts = new Set(["refund fees|202206931|refund", "refund fees|202506988|refund", "educational service|202606069|202505838", "fees|202506816|96587", "fees|202506916|96538", "adminstrative fees|202506737|88885", "fees|202606064|508", "fees|202406862|96533", "fees|202507065|96574", "fees|202606069|96565", "adminstrative fees|202506370|88717", "adminstrative fees|202506596|88756", "fees|202606071|96570", "fees|202306771|96553", "fees|202406801|96549", "id|202606066|202505732", "id|202606072|202505910", "ai|202606068|202505815", "fees|202606065|96557", "fees|202506643|513", "adminstrative fees|202506535|88683", "refund fees|202206856|refund", "educational service|202606066|202505730", "fees|202606070|512", "refund educational service|202506988|Refund", "adminstrative fees|202506190|88696", "educational service|202606070|202505841", "fees|202506816|96586", "insurance|202606070|202505841", "id|202606065|202505720", "fees|202506370|96541", "fees|202506737|96584", "fees|202406224|96580", "insurance|202606066|202505730", "refund insurance|202206773|Refund", "fees|202006492|96539", "other|202406841|88853", "educational service|202306979|88778", "fees|202306236|96582", "insurance|202606072|202505908", "adminstrative fees|202006492|88714", "fees|202506641|96563", "fees|202506058|96575", "fees|202507121|514", "educational service|202306894|88702", "fees|202306985|96545", "fees|202306894|96535", "ai|202606069|202505838", "graduation fees|202206773|88725", "fees|202306979|96554", "adminstrative fees|202306985|88730", "educational service|202606071|202505855", "fees|202606067|509", "educational service|202306995|88817", "adminstrative fees|202406780|88747", "adminstrative fees|202406801|88754", "educational service|202606064|202505667", "educational service|202606073|202505968", "adminstrative fees|202406821|88860", "refund fees|202506747|refund", "adminstrative fees|202506977|88786", "fees|202406821|96571", "id|202606068|202505816", "educational service|202306771|88762", "adminstrative fees|202306589|88785", "educational service|202606068|202505815", "fees|202406155|96559", "refund insurance|201706370|Refund", "fees|202006555|96534", "id|202606067|202505755", "ai|202606064|202505667", "adminstrative fees|202406224|88870", "insurance|202606064|202505667", "insurance|202606067|202505754", "fees|202506713|96568", "fees|202306847|96577", "ai|202606072|202505908", "other|202006492|88715", "adminstrative fees|202506333|88758", "graduation fees|201907027|88685", "ai|202606071|202505855", "refund insurance|202206931|Refund", "fees|202206283|96546", "fees|202306595|96567", "fees|202306634|96569", "fees|202206840|96536", "adminstrative fees|202306595|88835", "fees|202506446|96578", "ai|202606066|202505730", "fees|202606069|96566", "adminstrative fees|202406862|88689", "fees|202306771|96552", "fees|202206826|96576", "fees|202306589|96555", "ai|202606067|202505754", "fees|201907027|96532", "fees|202406821|96572", "fees|202506801|96585", "fees|202406288|96537", "fees|202506123|510", "refund insurance|202306501|Refund", "fees|202506333|96551", "ai|202606070|202505841", "fees|202206361|96562", "ai|202606065|202505719", "fees|202606073|515", "id|202606069|202505839", "insurance|202606065|202505719", "insurance|202606068|202505815", "educational service|202506370|88720", "fees|202506190|96542", "ai|202606073|202505968", "other|202506641|88805", "refund fees|201706370|refund", "fees|201906845|96581", "graduation fees|202206931|88826", "fees|202306501|96547", "adminstrative fees|202406841|88799", "educational service|202606072|202505908", "adminstrative fees|201806798|88724", "fees|201806798|96543", "adminstrative fees|202507121|88856", "fees|202506596|96550", "adminstrative fees|202206840|88706", "adminstrative fees|202406288|88708", "adminstrative fees|202506123|88790", "fees|202406841|96561", "fees|202506977|96558", "refund fees|202206773|refund", "other|202306236|88876", "id|202606073|202505969", "educational service|202606065|202505719", "fees|202506535|96544", "insurance|202606071|202505855", "id|202606070|202505842", "adminstrative fees|202006555|88700", "fees|202406821|96573", "fees|202406780|96548", "fees|202306995|96564", "insurance|202606069|202505838", "other|202406155|88819", "refund educational service|202506747|Refund", "fees|202606068|511", "fees|202606066|96556", "id|202606071|202505856", "insurance|202606073|202505968", "fees|202307202|96560", "fees|202306969|96583", "adminstrative fees|202306771|88765", "adminstrative fees|202506916|88709", "adminstrative fees|202306634|88849", "fees|202606072|96579", "educational service|202606067|202505754", "other|202306501|88742"]);
+let currentTab = 'business';
+let pendingImport = null;
+let editingId = null;
+let syncTimer = null;
+
+function setSyncStatus(text){
+  const el = document.getElementById('syncStatus');
+  if(el) el.textContent = text;
+}
+
+async function pullFromCloud(){
+  if(!SHEET_API_URL) return;
+  setSyncStatus('☁️ بيتزامن...');
+  try{
+    const res = await fetch(SHEET_API_URL, {method:'GET'});
+    const json = await res.json();
+    if(json && Array.isArray(json.business) && Array.isArray(json.cs)){
+      data = {business: json.business, cs: json.cs};
+      importedReceipts = new Set(Array.isArray(json.importedReceipts) ? json.importedReceipts : []);
+      switchTab(currentTab);
+    }
+    setSyncStatus('☁️ متزامن');
+  }catch(err){
+    setSyncStatus('⚠️ فشل الاتصال بجوجل شيت');
+  }
+}
+
+function pushToCloud(){
+  if(!SHEET_API_URL) return;
+  clearTimeout(syncTimer);
+  setSyncStatus('☁️ بيحفظ...');
+  syncTimer = setTimeout(async ()=>{
+    try{
+      await fetch(SHEET_API_URL, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'}, // avoids CORS preflight on Apps Script
+        body: JSON.stringify({...data, importedReceipts: Array.from(importedReceipts)})
+      });
+      setSyncStatus('☁️ متزامن');
+    }catch(err){
+      setSyncStatus('⚠️ فشل الحفظ على جوجل شيت');
+    }
+  }, 900);
+}
+
+function students(){ return data[currentTab]; }
+
+function fmt(n){
+  n = Math.round(n*100)/100;
+  const neg = n < 0;
+  const abs = Math.abs(n).toLocaleString('en-US', {maximumFractionDigits:2});
+  return (neg ? '-' : '') + abs;
+}
+function computeTotals(s){
+  const totalDue = s.insDue + s.assoDue + s.eduDue + s.minFees;
+  const totalPaid = s.insPaid + s.assoPaid + s.eduPaid + s.otherPaid;
+  const balance = totalDue - totalPaid;
+  return {totalDue, totalPaid, balance};
+}
+function statusOf(balance){
+  if (balance > 0.01) return 'debit';
+  if (balance < -0.01) return 'credit';
+  return 'even';
+}
+function isFlagged(s){ return (s.notes||'').includes('محتاج ضبط'); }
+
+function switchTab(tab){
+  currentTab = tab;
+  document.getElementById('tabBtn_business').classList.toggle('active', tab==='business');
+  document.getElementById('tabBtn_cs').classList.toggle('active', tab==='cs');
+  render();
+}
+
+function renderSummary(){
+  document.getElementById('count_business').textContent = data.business.length;
+  document.getElementById('count_cs').textContent = data.cs.length;
+
+  let totalDue=0, totalPaid=0, balance=0, debitCount=0, flaggedCount=0;
+  students().forEach(s=>{
+    const t = computeTotals(s);
+    totalDue += t.totalDue; totalPaid += t.totalPaid; balance += t.balance;
+    if(statusOf(t.balance)==='debit') debitCount++;
+    if(isFlagged(s)) flaggedCount++;
+  });
+  const cards = [
+    {label:'عدد الطلاب', value: students().length, cls:''},
+    {label:'إجمالي المستحق', value: fmt(totalDue), cls:''},
+    {label:'إجمالي المدفوع', value: fmt(totalPaid), cls:''},
+    {label:'صافي الرصيد', value: fmt(balance), cls: balance>0?'debit':(balance<0?'credit':'')},
+    {label:'مدينين (عليهم)', value: debitCount, cls:'debit'},
+    {label:'محتاجين ضبط المستحق', value: flaggedCount, cls:''},
+  ];
+  document.getElementById('summaryCards').innerHTML = cards.map(c=>
+    `<div class="card ${c.cls}"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`
+  ).join('');
+}
+
+function render(){
+  renderSummary();
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  const statusFilter = document.getElementById('statusFilter').value;
+  const sortBy = document.getElementById('sortBy').value;
+  let list = students().map((s, idx) => ({...s, _idx: idx, ...computeTotals(s)}));
+  list = list.filter(s => !q || s.name.toLowerCase().includes(q) || String(s.id).includes(q));
+  if (statusFilter === 'flagged') list = list.filter(s=>isFlagged(s));
+  else if (statusFilter !== 'all') list = list.filter(s => statusOf(s.balance) === statusFilter);
+  if (sortBy === 'name') list.sort((a,b)=>a.name.localeCompare(b.name));
+  else if (sortBy === 'balanceDesc') list.sort((a,b)=>b.balance-a.balance);
+  else if (sortBy === 'balanceAsc') list.sort((a,b)=>a.balance-b.balance);
+
+  const tbody = document.getElementById('tableBody');
+  const emptyNote = document.getElementById('emptyNote');
+  if (list.length === 0){ tbody.innerHTML=''; emptyNote.style.display='block'; return; }
+  emptyNote.style.display = 'none';
+
+  tbody.innerHTML = list.map((s,i)=>{
+    const st = statusOf(s.balance);
+    let pillClass = st==='debit' ? 'pill-debit' : (st==='credit' ? 'pill-credit' : 'pill-even');
+    let pillText = st==='debit' ? 'مدين (عليه)' : (st==='credit' ? 'دائن (له)' : 'متزن');
+    if (isFlagged(s)){ pillClass='pill-flag'; pillText='محتاج ضبط المستحق'; }
+    return `<tr>
+      <td>${i+1}</td><td>${s.id}</td><td class="name-cell">${s.name}</td><td>${s.nat}</td><td>${s.major}</td><td>${s.level}</td>
+      <td>${s.disc}%</td>
+      <td>${fmt(s.insDue)}</td><td>${fmt(s.assoDue)}</td><td>${fmt(s.eduDue)}</td><td>${fmt(s.minFees)}</td><td><b>${fmt(s.totalDue)}</b></td>
+      <td>${fmt(s.insPaid)}</td><td>${fmt(s.assoPaid)}</td><td>${fmt(s.eduPaid)}</td><td>${fmt(s.otherPaid)}</td><td><b>${fmt(s.totalPaid)}</b></td>
+      <td><b>${fmt(s.balance)}</b></td><td><span class="status-pill ${pillClass}">${pillText}</span></td>
+      <td class="notes-cell">${s.notes || ''}</td>
+      <td class="actions-cell">
+        <button class="btn-ghost btn-sm" onclick="openEditModal(${s._idx})">تعديل</button>
+        <button class="btn-danger btn-sm" onclick="deleteStudent(${s._idx})">حذف</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openAddModal(){
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'إضافة طالب لـ ' + (currentTab==='business'?'Business':'Computer Science');
+  document.getElementById('studentForm').reset();
+  document.getElementById('f_major').value = 'General';
+  document.getElementById('f_level').value = 1;
+  document.getElementById('f_disc').value = 0;
+  ['insDue','insPaid','assoDue','assoPaid','eduDue','eduPaid','minFees','otherPaid'].forEach(k=>{ document.getElementById('f_'+k).value = 0; });
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function openEditModal(idx){
+  editingId = idx; const s = students()[idx];
+  document.getElementById('modalTitle').textContent = 'تعديل بيانات طالب';
+  document.getElementById('f_id').value = s.id;
+  document.getElementById('f_name').value = s.name;
+  document.getElementById('f_nat').value = s.nat;
+  document.getElementById('f_major').value = s.major;
+  document.getElementById('f_level').value = s.level;
+  document.getElementById('f_status').value = s.status;
+  document.getElementById('f_disc').value = (s.disc <= 1) ? Math.round(s.disc*100) : s.disc;
+  document.getElementById('f_insDue').value = s.insDue;
+  document.getElementById('f_insPaid').value = s.insPaid;
+  document.getElementById('f_assoDue').value = s.assoDue;
+  document.getElementById('f_assoPaid').value = s.assoPaid;
+  document.getElementById('f_eduDue').value = s.eduDue;
+  document.getElementById('f_eduPaid').value = s.eduPaid;
+  document.getElementById('f_minFees').value = s.minFees;
+  document.getElementById('f_otherPaid').value = s.otherPaid;
+  document.getElementById('f_notes').value = s.notes || '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+
+function saveStudent(e){
+  e.preventDefault();
+  const s = {
+    id: document.getElementById('f_id').value, name: document.getElementById('f_name').value,
+    nat: document.getElementById('f_nat').value, major: document.getElementById('f_major').value,
+    level: Number(document.getElementById('f_level').value)||1, status: document.getElementById('f_status').value,
+    disc: Number(document.getElementById('f_disc').value)/100,
+    insDue: Number(document.getElementById('f_insDue').value)||0, insPaid: Number(document.getElementById('f_insPaid').value)||0,
+    assoDue: Number(document.getElementById('f_assoDue').value)||0, assoPaid: Number(document.getElementById('f_assoPaid').value)||0,
+    eduDue: Number(document.getElementById('f_eduDue').value)||0, eduPaid: Number(document.getElementById('f_eduPaid').value)||0,
+    minFees: Number(document.getElementById('f_minFees').value)||0, otherPaid: Number(document.getElementById('f_otherPaid').value)||0,
+    notes: document.getElementById('f_notes').value
+  };
+  if (editingId === null) students().push(s); else students()[editingId] = s;
+  closeModal(); render(); pushToCloud(); return false;
+}
+function deleteStudent(idx){
+  if (!confirm('متأكد إنك عايز تحذف الطالب ده؟')) return;
+  students().splice(idx,1); render(); pushToCloud();
+}
+function exportCSV(){
+  const headers = ['الكود','الاسم','الجنسية','التخصص','المستوى','خصم%','مستحق المعهد','مستحق الجمعية','مستحق الخدمات','رسوم الوزارة','إجمالي المستحق','مدفوع المعهد','مدفوع الجمعية','مدفوع الخدمات','رسوم أخرى مدفوعة','إجمالي المدفوع','الرصيد','الحالة','ملاحظات'];
+  const rows = students().map(s=>{
+    const t = computeTotals(s); const st = statusOf(t.balance);
+    const stText = st==='debit' ? 'مدين' : (st==='credit' ? 'دائن' : 'متزن');
+    return [s.id,s.name,s.nat,s.major,s.level,(s.disc*100)+'%',s.insDue,s.assoDue,s.eduDue,s.minFees,t.totalDue,s.insPaid,s.assoPaid,s.eduPaid,s.otherPaid,t.totalPaid,t.balance,stText,'"'+(s.notes||'').replace(/"/g,'""')+'"'];
+  });
+  let csv = '\uFEFF' + headers.join(',') + '\n' + rows.map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = (currentTab)+'_students_export.csv'; link.click();
+}
+function exportJSON(){
+  const payload = {data, importedReceipts: Array.from(importedReceipts)};
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'students_backup_2026.json'; link.click();
+}
+function importJSON(event){
+  const file = event.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed.data || !Array.isArray(parsed.data.business) || !Array.isArray(parsed.data.cs)) throw new Error('bad format');
+      if(!confirm('هيتم استبدال كل البيانات الحالية بالنسخة دي، متأكد؟')) return;
+      data = parsed.data;
+      importedReceipts = new Set(Array.isArray(parsed.importedReceipts) ? parsed.importedReceipts : []);
+      render(); pushToCloud();
+    }catch(err){ alert('الملف مش بصيغة صحيحة'); }
+  };
+  reader.readAsText(file); event.target.value = '';
+}
+
+/* ================= SMART IMPORT ================= */
+function openImportModal(){
+  document.getElementById('importSummary').style.display='none';
+  document.getElementById('importApplyBox').style.display='none';
+  document.getElementById('imp_own').value='';
+  document.getElementById('imp_asso').value='';
+  document.getElementById('imp_can').value='';
+  document.getElementById('imp_program').value = currentTab;
+  pendingImport = null;
+  document.getElementById('importOverlay').classList.add('open');
+}
+function closeImportModal(){ document.getElementById('importOverlay').classList.remove('open'); }
+
+function readSheet(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = e => { try{ resolve(XLSX.read(e.target.result, {type:'array', cellDates:true})); }catch(err){ reject(err); } };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+const BUCKET_MAP = {
+  'fees': ['institute', 1], 'refund fees': ['institute', -1],
+  'graduation fees': ['association', 1], 'adminstrative fees': ['association', 1],
+  'other': ['association', 1], 'id': ['association', 1], 'refund other': ['association', -1],
+  'insurance': ['other', 1], 'refund insurance': ['other', -1],
+  'educational service': ['edu', 1], 'refund educational service': ['edu', -1],
+  'ai': ['other', 1]
+};
+const NEW_BATCH_PREFIX = '2026';
+
+function extractRows(wb, sheetName, cols){
+  const ws = wb.Sheets[sheetName];
+  if(!ws) return [];
+  const sheetData = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  const rows = [];
+  for(let i=1; i<sheetData.length; i++){
+    const row = sheetData[i];
+    if(!row) continue;
+    const idRaw = row[cols.id-1];
+    const id = parseInt(idRaw);
+    if(!id || id < 200000000) continue;
+    if(!String(id).startsWith(NEW_BATCH_PREFIX)) continue; // scope: 2026 batch only
+    const cash = Number(row[cols.cash-1]) || 0;
+    const cohort = String(row[cols.cohort-1]||'').trim().toLowerCase();
+    const name = String(row[cols.name-1]||'').trim();
+    const receipt = row[cols.receipt-1];
+    rows.push({id, cohort, cash, name, receipt: receipt!=null? String(receipt): null});
+  }
+  return rows;
+}
+
+function aggregateRows(rows){
+  const out = {};
+  for(const r of rows){
+    const key = r.receipt ? (r.cohort+'|'+r.id+'|'+r.receipt) : null;
+    if(key && importedReceipts.has(key)) continue;
+    const bucket = BUCKET_MAP[r.cohort];
+    if(!bucket) continue;
+    const [b, sign] = bucket;
+    if(!out[r.id]) out[r.id] = {name:r.name, institute:0, association:0, edu:0, other:0, keys:[]};
+    out[r.id][b] += sign * r.cash;
+    if(r.name && !out[r.id].name) out[r.id].name = r.name;
+    if(key) out[r.id].keys.push(key);
+  }
+  return out;
+}
+
+async function runImport(){
+  const targetProgram = document.getElementById('imp_program').value;
+  const ownFile = document.getElementById('imp_own').files[0];
+  const assoFile = document.getElementById('imp_asso').files[0];
+  const canFile = document.getElementById('imp_can').files[0];
+  if(!ownFile){ alert('لازم تختار ملف مدفوعات البرنامج على الأقل'); return; }
+
+  let ownRows = [];
+  const ownWb = await readSheet(ownFile);
+  for(const sn of ownWb.SheetNames){
+    const l = sn.toLowerCase();
+    if(l.includes('total') || l.startsWith('sheet1') || l.startsWith('sheet2')){
+      ownRows = ownRows.concat(extractRows(ownWb, sn, {id:7, cohort:4, cash:10, name:8, receipt:3}));
+    }
+  }
+  const ownAgg = aggregateRows(ownRows);
+
+  let assoAgg = {}, canAgg = {};
+  if(assoFile){
+    const wb = await readSheet(assoFile);
+    assoAgg = aggregateRows(extractRows(wb, 'Total', {id:6, cohort:3, cash:10, name:7, receipt:2}));
+  }
+  if(canFile){
+    const wb = await readSheet(canFile);
+    canAgg = aggregateRows(extractRows(wb, 'Total', {id:8, cohort:5, cash:12, name:9, receipt:4}));
+  }
+
+  // relevant 2026 ids = own log ids UNION both tabs' current rosters
+  const allCurrentIds = new Set([...data.business.map(s=>String(s.id)), ...data.cs.map(s=>String(s.id))]);
+  const programIds = new Set([...Object.keys(ownAgg).map(String), ...data[targetProgram].map(s=>String(s.id))]);
+
+  const changes = {};
+  function addTo(agg, restrictTo){
+    Object.entries(agg).forEach(([id, d])=>{
+      if(restrictTo && !restrictTo.has(String(id))) return;
+      if(!changes[id]) changes[id] = {institute:0, association:0, edu:0, other:0, name:d.name, keys:[]};
+      changes[id].institute += d.institute; changes[id].association += d.association;
+      changes[id].edu += d.edu; changes[id].other += d.other;
+      changes[id].keys.push(...d.keys);
+      if(d.name && !changes[id].name) changes[id].name = d.name;
+    });
+  }
+  addTo(ownAgg, null); // own file always belongs to targetProgram
+  addTo(assoAgg, allCurrentIds.size ? new Set([...allCurrentIds, ...Object.keys(ownAgg)]) : null);
+  addTo(canAgg, allCurrentIds.size ? new Set([...allCurrentIds, ...Object.keys(ownAgg)]) : null);
+
+  const currentIdsInTarget = new Set(data[targetProgram].map(s=>String(s.id)));
+  const newStudents = [], updatedStudents = [];
+  Object.entries(changes).forEach(([id, d])=>{
+    const total = d.institute + d.association + d.edu + d.other;
+    if(Math.abs(total) < 0.001 && d.keys.length===0) return;
+    // decide which tab this id belongs to: target tab if it's own-log id or already in target; else check other tab
+    const otherProgram = targetProgram==='business' ? 'cs' : 'business';
+    const inOther = data[otherProgram].some(s=>String(s.id)===String(id));
+    const belongsHere = ownAgg[id] !== undefined || currentIdsInTarget.has(String(id)) || !inOther;
+    if(!belongsHere) return; // belongs to the other tab, skip here
+    if(currentIdsInTarget.has(String(id))) updatedStudents.push({id, ...d});
+    else newStudents.push({id, ...d});
+  });
+
+  pendingImport = {targetProgram, newStudents, updatedStudents};
+
+  let html = `<div class="import-summary">`;
+  html += `البرنامج: <b>${targetProgram==='business'?'Business':'Computer Science'}</b><br>`;
+  html += `<b>${newStudents.length}</b> طالب جديد (دفعة 2026) هيتضاف، <b>${updatedStudents.length}</b> طالب موجود هيتحدث رصيده.<br><br>`;
+  if(newStudents.length){
+    html += `<b>طلاب جدد:</b><table><tr><th>الكود</th><th>الاسم</th><th>معهد</th><th>جمعية</th><th>خدمات</th><th>أخرى</th></tr>`;
+    newStudents.forEach(s=> html += `<tr><td>${s.id}</td><td>${s.name}</td><td>${fmt(s.institute)}</td><td>${fmt(s.association)}</td><td>${fmt(s.edu)}</td><td>${fmt(s.other)}</td></tr>`);
+    html += `</table><br>`;
+  }
+  if(updatedStudents.length){
+    html += `<b>تحديثات على طلاب موجودين:</b><table><tr><th>الكود</th><th>الاسم</th><th>+معهد</th><th>+جمعية</th><th>+خدمات</th><th>+أخرى</th></tr>`;
+    updatedStudents.forEach(s=> html += `<tr><td>${s.id}</td><td>${s.name}</td><td>${fmt(s.institute)}</td><td>${fmt(s.association)}</td><td>${fmt(s.edu)}</td><td>${fmt(s.other)}</td></tr>`);
+    html += `</table>`;
+  }
+  if(!newStudents.length && !updatedStudents.length){
+    html += `مفيش تحديثات جديدة، أو الملفات دي اتضافت قبل كده، أو مفيش طلاب دفعة 2026 فيها.`;
+  }
+  html += `</div>`;
+  document.getElementById('importSummary').innerHTML = html;
+  document.getElementById('importSummary').style.display = 'block';
+  document.getElementById('importApplyBox').style.display = (newStudents.length||updatedStudents.length) ? 'flex' : 'none';
+}
+
+function applyImport(){
+  if(!pendingImport) return;
+  const list = data[pendingImport.targetProgram];
+  const byId = {}; list.forEach((s,idx)=> byId[String(s.id)] = idx);
+  pendingImport.updatedStudents.forEach(d=>{
+    const idx = byId[String(d.id)];
+    if(idx===undefined) return;
+    list[idx].insPaid = Math.round((list[idx].insPaid + d.institute)*100)/100;
+    list[idx].assoPaid = Math.round((list[idx].assoPaid + d.association)*100)/100;
+    list[idx].eduPaid = Math.round((list[idx].eduPaid + d.edu)*100)/100;
+    list[idx].otherPaid = Math.round((list[idx].otherPaid + d.other)*100)/100;
+    d.keys.forEach(k=>importedReceipts.add(k));
+  });
+  pendingImport.newStudents.forEach(d=>{
+    list.push({
+      id: Number(d.id), name: d.name || ('طالب '+d.id), nat:'Egyptian', major:'General', level:1, status:'Registered',
+      disc:0, insDue:0, assoDue:0, eduDue:0, minFees:0,
+      insPaid: Math.round(d.institute*100)/100, assoPaid: Math.round(d.association*100)/100,
+      eduPaid: Math.round(d.edu*100)/100, otherPaid: Math.round(d.other*100)/100,
+      notes: 'مستحق غير محدد بعد - طالب جديد من الاستيراد، محتاج ضبط الرسوم يدويًا'
+    });
+    d.keys.forEach(k=>importedReceipts.add(k));
+  });
+  closeImportModal();
+  switchTab(pendingImport.targetProgram);
+  pushToCloud();
+  alert('تم التحديث بنجاح' + (SHEET_API_URL ? ' وجاري الحفظ على جوجل شيت.' : '. متنساش تحفظ نسخة JSON بعد كده.'));
+}
+
+switchTab('business');
+if(SHEET_API_URL) pullFromCloud();
+</script>
+</body>
+</html>
